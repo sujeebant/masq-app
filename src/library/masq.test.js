@@ -38,7 +38,7 @@ test('update an existing profile', async () => {
 test('should throw if there is no id in profile', async () => {
   expect.assertions(1)
   const profiles = await masq.getProfiles()
-  let profile = profiles[0]
+  const profile = { ...profiles[0] }
   delete profile.id
 
   try {
@@ -50,7 +50,8 @@ test('should throw if there is no id in profile', async () => {
 
 test('add an app and retrieve it', async () => {
   const app = { name: 'myapp' }
-  const profileId = 'profileId'
+  const profiles = await masq.getProfiles()
+  const profileId = profiles[0].id
 
   await masq.addApp(profileId, app)
   const apps = await masq.getApps(profileId)
@@ -60,7 +61,9 @@ test('add an app and retrieve it', async () => {
 })
 
 test('update an app', async () => {
-  const profileId = 'profileId'
+  const profiles = await masq.getProfiles()
+  const profileId = profiles[0].id
+
   let apps = await masq.getApps(profileId)
   const app = apps[0]
   app.name = 'new name'
@@ -73,9 +76,10 @@ test('update an app', async () => {
 
 test('should throw if there is no id in app', async () => {
   expect.assertions(1)
-  const profileId = 'profileId'
+  const profiles = await masq.getProfiles()
+  const profileId = profiles[0].id
   const apps = await masq.getApps(profileId)
-  let app = apps[0]
+  const app = { ...apps[0] }
   delete app.id
 
   try {
@@ -87,7 +91,8 @@ test('should throw if there is no id in app', async () => {
 
 test('add a device and retrieve it', async () => {
   const device = { name: 'mydevice' }
-  const profileId = 'profileId'
+  const profiles = await masq.getProfiles()
+  const profileId = profiles[0].id
 
   await masq.addDevice(profileId, device)
   const devices = await masq.getDevices(profileId)
@@ -97,7 +102,8 @@ test('add a device and retrieve it', async () => {
 })
 
 test('update a device', async () => {
-  const profileId = 'profileId'
+  const profiles = await masq.getProfiles()
+  const profileId = profiles[0].id
   let devices = await masq.getDevices(profileId)
   const device = devices[0]
   device.name = 'new name'
@@ -110,9 +116,10 @@ test('update a device', async () => {
 
 test('should throw if there is no id in device', async () => {
   expect.assertions(1)
-  const profileId = 'profileId'
+  const profiles = await masq.getProfiles()
+  const profileId = profiles[0].id
   const devices = await masq.getDevices(profileId)
-  let device = devices[0]
+  const device = { ...devices[0] }
   delete device.id
 
   try {

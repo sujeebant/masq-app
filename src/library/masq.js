@@ -4,8 +4,7 @@ import hyperdb from 'hyperdb'
 import swarm from 'webrtc-swarm'
 import pump from 'pump'
 import uuidv4 from 'uuid/v4'
-
-import promiseHyperdb from './promiseHyperdb'
+import { promisifyAll } from 'bluebird'
 
 const HUB_URLS = ['localhost:8080']
 
@@ -14,10 +13,10 @@ const HUB_URLS = ['localhost:8080']
  * @param {string} name The indexeddb store name
  */
 const openOrCreateDB = (name) => {
-  return hyperdb(rai(name), {
+  return promisifyAll(hyperdb(rai(name), {
     valueEncoding: 'json',
     firstNode: true
-  })
+  }))
 }
 
 /**
@@ -43,24 +42,22 @@ const dbReady = db =>
 
 class Masq {
   constructor () {
-    this.dbs = {
-      core: null,
-      profiles: null
-    }
+    this.dbs = {}
   }
 
   /**
-   * Initialize Masq: Open core and profiles databases
+   * Initialize Masq: Open profiles databases
    * and replicate them in their respective swarms.
    */
   async init () {
-    // create or open core and profiles databases
-    this.dbs.core = openOrCreateDB('masq-core')
-    this.dbs.profiles = openOrCreateDB('masq-profiles')
+    const ids = JSON.parse(window.localStorage.getItem('profiles'))
+    if (!ids || !ids.length) return
 
-    Object.values(this.dbs).forEach(db =>
+    ids.forEach(id => {
+      const db = openOrCreateDB(id)
+      this.dbs[id] = db
       db.on('ready', () => replicateDB(db))
-    )
+    })
 
     const profiles = await this.getProfiles()
     const profilesIds = profiles.map(p => p.id)
@@ -76,41 +73,34 @@ class Masq {
   }
 
   /**
-   * Add a new profile to the core and profiles databases
+   * Create a new profile DB
    * @param {object} profile The new profile to add
    */
   async addProfile (profile) {
-    const node = await promiseHyperdb.get(this.dbs.core, '/profiles')
-    const ids = node ? node.value : []
+    // TODO: Check profile properties
     const id = uuidv4()
-    profile['id'] = id
-    const batch = [{
-      type: 'put',
-      key: '/profiles',
-      value: [...ids, id]
-    }, {
-      type: 'put',
-      key: `/profiles/${id}`,
-      value: profile
-    }]
+    const ids = JSON.parse(window.localStorage.getItem('profiles')) || []
+    window.localStorage.setItem('profiles', JSON.stringify([...ids, id]))
 
-    await promiseHyperdb.batch(this.dbs.core, batch)
-    await promiseHyperdb.batch(this.dbs.profiles, batch)
+    // Create a DB for this profile
+    const db = openOrCreateDB(id)
+    this.dbs[id] = db
+    await dbReady(db)
+
+    profile.id = id
+    await db.putAsync('/', profile)
   }
 
   /**
-   * Get private profiles from core db
+   * Get private profiles from each profile db
    */
   async getProfiles () {
-    const node = await promiseHyperdb.get(this.dbs.core, '/profiles')
-    if (!node) return []
+    const ids = JSON.parse(window.localStorage.getItem('profiles'))
+    if (!ids) return []
 
-    const ids = node.value
-    const profilePromises = ids.map(
-      id => promiseHyperdb.get(this.dbs.core, `/profiles/${id}`)
-    )
-    const profileNodes = await Promise.all(profilePromises)
-    const profiles = profileNodes.map(n => n.value)
+    const promises = ids.map(id => this.dbs[id].getAsync('/'))
+    const nodes = await Promise.all(promises)
+    const profiles = nodes.map(n => n.value)
     return profiles
   }
 
@@ -119,11 +109,10 @@ class Masq {
    * @param {object} profile The updated profile
    */
   async updateProfile (profile) {
+    // TODO: Check profile
     const id = profile.id
     if (!id) throw Error('Missing id')
-
-    await promiseHyperdb.put(this.dbs.core, `/profile/${id}`, profile)
-    await promiseHyperdb.put(this.dbs.profiles, `/profiles/${id}`, profile)
+    await this.dbs[id].putAsync('/', profile)
   }
 
   /**
@@ -256,33 +245,33 @@ class Masq {
   async _createResource (profileId, name, res) {
     if (!profileId) throw Error('missing profileId')
 
-    const node = await promiseHyperdb.get(this.dbs.core, `/profiles/${profileId}/${name}`)
+    const node = await this.dbs[profileId].getAsync(`/${name}`)
     const ids = node ? node.value : []
     const id = uuidv4()
     res['id'] = id
 
     const batch = [{
       type: 'put',
-      key: `/profiles/${profileId}/${name}`,
+      key: `/${name}`,
       value: [...ids, id]
     }, {
       type: 'put',
-      key: `/profiles/${profileId}/${name}/${id}`,
+      key: `/${name}/${id}`,
       value: res
     }]
 
-    await promiseHyperdb.batch(this.dbs.core, batch)
+    await this.dbs[profileId].batchAsync(batch)
   }
 
   async _getResources (profileId, name) {
     if (!profileId) throw Error('missing profileId')
 
-    const node = await promiseHyperdb.get(this.dbs.core, `/profiles/${profileId}/${name}`)
+    const node = await this.dbs[profileId].getAsync(`/${name}`)
     if (!node) return []
 
     const ids = node.value
     const resourcePromises = ids.map(
-      id => promiseHyperdb.get(this.dbs.core, `/profiles/${profileId}/${name}/${id}`)
+      id => this.dbs[profileId].getAsync(`/${name}/${id}`)
     )
     const resourceNodes = await Promise.all(resourcePromises)
     const resources = resourceNodes.map(n => n.value)
@@ -295,7 +284,7 @@ class Masq {
     const id = res.id
     if (!id) throw Error('Missing id')
 
-    return promiseHyperdb.put(this.dbs.core, `/profiles/${profileId}/${name}/${id}`, res)
+    return this.dbs[profileId].putAsync(`/${name}/${id}`, res)
   }
 }
 
