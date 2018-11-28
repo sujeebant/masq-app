@@ -36,11 +36,6 @@ const replicateDB = db => {
   })
 }
 
-const dbReady = db =>
-  new Promise(resolve =>
-    db.on('ready', () => resolve())
-  )
-
 class Masq {
   constructor () {
     this.dbs = {
@@ -179,7 +174,7 @@ class Masq {
   }
 
   async syncProfiles (channel, challenge) {
-    await dbReady(this.dbs.profiles)
+    await promiseHyperdb.ready(this.dbs.profiles)
     const hub = signalhub(channel, HUB_URLS)
     const sw = swarm(hub)
 

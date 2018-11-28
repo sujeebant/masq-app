@@ -1,7 +1,10 @@
 module.exports = {
   get,
   batch,
-  put
+  put,
+  del,
+  ready,
+  dbExists
 }
 
 function get (db, path) {
@@ -28,5 +31,40 @@ function put (db, path, obj) {
       if (err) return reject(err)
       return resolve()
     })
+  })
+}
+
+function del (db, path) {
+  return new Promise((resolve, reject) => {
+    db.del(path, (err, node) => {
+      if (err) return reject(err)
+      return resolve(node)
+    })
+  })
+}
+
+function ready (db) {
+  return new Promise((resolve, reject) => {
+    db.on('ready', () => {
+      resolve()
+    })
+  })
+}
+
+function dbExists (dbName) {
+  return new Promise((resolve, reject) => {
+    let req = window.indexedDB.open(dbName)
+    let existed = true
+    req.onsuccess = () => {
+      req.result.close()
+      if (!existed) { window.indexedDB.deleteDatabase(dbName) }
+      resolve(existed)
+    }
+    req.onupgradeneeded = () => {
+      existed = false
+    }
+    req.onerror = (err) => {
+      reject(err)
+    }
   })
 }
