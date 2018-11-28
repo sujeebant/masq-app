@@ -6,8 +6,7 @@ import pump from 'pump'
 import uuidv4 from 'uuid/v4'
 
 import promiseHyperdb from './promiseHyperdb'
-
-const HUB_URLS = ['localhost:8080']
+import * as config from '../config/config'
 
 /**
  * Open or create a hyperdb instance
@@ -27,7 +26,7 @@ const openOrCreateDB = (name) => {
  */
 const replicateDB = db => {
   const discoveryKey = db.discoveryKey.toString('hex')
-  const hub = signalhub(discoveryKey, HUB_URLS)
+  const hub = signalhub(discoveryKey, config.HUB_URLS)
   const sw = swarm(hub)
 
   sw.on('peer', peer => {
@@ -180,7 +179,7 @@ class Masq {
 
   async syncProfiles (channel, challenge) {
     await dbReady(this.dbs.profiles)
-    const hub = signalhub(channel, HUB_URLS)
+    const hub = signalhub(channel, config.HUB_URLS)
     const sw = swarm(hub)
 
     sw.on('close', () => hub.close())
@@ -206,7 +205,7 @@ class Masq {
         return resolve()
       }
 
-      const hub = signalhub(channel, HUB_URLS)
+      const hub = signalhub(channel, config.HUB_URLS)
       const sw = swarm(hub)
 
       sw.on('close', () => hub.close())
