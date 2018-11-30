@@ -19,22 +19,6 @@ const openOrCreateDB = (name) => {
   }))
 }
 
-/**
- * Replicate a database in a swarm indefinitely,
- * using db.discoveryKey as channel name
- * @param {object} db
- */
-const replicateDB = db => {
-  const discoveryKey = db.discoveryKey.toString('hex')
-  const hub = signalhub(discoveryKey, HUB_URLS)
-  const sw = swarm(hub)
-
-  sw.on('peer', peer => {
-    const stream = db.replicate({ live: true })
-    pump(peer, stream, peer)
-  })
-}
-
 const dbReady = db =>
   new Promise(resolve =>
     db.on('ready', () => resolve())
@@ -42,34 +26,42 @@ const dbReady = db =>
 
 class Masq {
   constructor () {
-    this.dbs = {}
+    this.profileId = null
+    this.profileDB = null
+
+    this.appsDBs = {}
+    this.swarms = {}
+    this.hubs = {}
   }
 
   /**
-   * Initialize Masq: Open profiles databases
-   * and replicate them in their respective swarms.
+   * Open and replicate a profile database
    */
-  async init () {
-    const ids = JSON.parse(window.localStorage.getItem('profiles'))
-    if (!ids || !ids.length) return
+  async openProfile (profileId) {
+    if (!profileId) throw Error('Missing profileId')
 
-    ids.forEach(id => {
-      const db = openOrCreateDB(id)
-      this.dbs[id] = db
-      db.on('ready', () => replicateDB(db))
+    this.closeProfile()
+
+    this.profileId = profileId
+    this.profileDB = openOrCreateDB(profileId)
+    this.profileDB.on('ready', () => this._startReplicate(this.profileDB))
+
+    const apps = await this.getApps()
+    apps.forEach(app => {
+      const dbName = profileId + '-' + app.name
+      const db = openOrCreateDB(dbName)
+      this.appsDBs[dbName] = db
+      db.on('ready', () => this._startReplicate(db))
     })
 
-    const profiles = await this.getProfiles()
-    const profilesIds = profiles.map(p => p.id)
-    profilesIds.forEach(async (id) => {
-      const apps = await this.getApps(id)
-      apps.forEach(app => {
-        const dbName = id + '-' + app.name
-        const db = openOrCreateDB(dbName)
-        this.dbs[dbName] = db
-        db.on('ready', () => replicateDB(db))
-      })
-    })
+    const profile = (await this.profileDB.getAsync('/')).value
+    return profile
+  }
+
+  async closeProfile () {
+    this._stopAllReplicates()
+    this.profileDB = null
+    this.dbs = {}
   }
 
   /**
@@ -79,29 +71,21 @@ class Masq {
   async addProfile (profile) {
     // TODO: Check profile properties
     const id = uuidv4()
-    const ids = JSON.parse(window.localStorage.getItem('profiles')) || []
-    window.localStorage.setItem('profiles', JSON.stringify([...ids, id]))
+    profile.id = id
 
     // Create a DB for this profile
     const db = openOrCreateDB(id)
-    this.dbs[id] = db
     await dbReady(db)
-
-    profile.id = id
     await db.putAsync('/', profile)
+
+    this._setProfileToLocalStorage(profile)
   }
 
   /**
-   * Get private profiles from each profile db
+   * Get public profiles from localstorage (id, username, and )
    */
   async getProfiles () {
-    const ids = JSON.parse(window.localStorage.getItem('profiles'))
-    if (!ids) return []
-
-    const promises = ids.map(id => this.dbs[id].getAsync('/'))
-    const nodes = await Promise.all(promises)
-    const profiles = nodes.map(n => n.value)
-    return profiles
+    return this._getProfilesFromLocalStorage()
   }
 
   /**
@@ -110,87 +94,66 @@ class Masq {
    */
   async updateProfile (profile) {
     // TODO: Check profile
+    this._checkProfile()
     const id = profile.id
     if (!id) throw Error('Missing id')
-    await this.dbs[id].putAsync('/', profile)
+    await this.profileDB.putAsync('/', profile)
+    this._setProfileToLocalStorage(profile)
   }
 
   /**
    * Add an app to a specified profile
-   * @param {number} profileId The profile id the app belongs to
    * @param {object} app The app
    */
-  addApp (profileId, app) {
-    return this._createResource(profileId, 'apps', app)
+  addApp (app) {
+    return this._createResource('apps', app)
   }
 
   /**
    * Add a device to a specified profile
-   * @param {number} profileId The profile id the app belongs to
    * @param {object} device The device
    */
-  addDevice (profileId, device) {
-    return this._createResource(profileId, 'devices', device)
+  addDevice (device) {
+    return this._createResource('devices', device)
   }
 
   /**
-   * Get all apps attached to a profile id
-   * @param {number} profileId The profile id for which we get the apps
+   * Get all apps of the current profile
    */
-  getApps (profileId) {
-    return this._getResources(profileId, 'apps')
+  getApps () {
+    this._checkProfile()
+    return this._getResources('apps')
   }
 
   /**
-   * Get all devices attached to a profile id
-   * @param {number} profileId The profile id for which we get the devices
+   * Get all devices of the current profile
    */
-  getDevices (profileId) {
-    return this._getResources(profileId, 'devices')
+  getDevices () {
+    this._checkProfile()
+    return this._getResources('devices')
   }
 
   /**
    * Update an app
-   * @param {number} profileId The profile id to which the app is attached
    * @param {object} app The updated app
    */
-  updateApp (profileId, app) {
-    return this._updateResource(profileId, 'apps', app)
+  updateApp (app) {
+    this._checkProfile()
+    return this._updateResource('apps', app)
   }
 
   /**
    * Update a device
-   * @param {number} profileId The profile id to which the device is attached
    * @param {object} device The updated device
    */
-  async updateDevice (profileId, device) {
-    this._updateResource(profileId, 'devices', device)
-  }
-
-  async syncProfiles (channel, challenge) {
-    await dbReady(this.dbs.profiles)
-    const hub = signalhub(channel, HUB_URLS)
-    const sw = swarm(hub)
-
-    sw.on('close', () => hub.close())
-
-    sw.on('peer', (peer) => {
-      peer.on('data', data => {
-        sw.close()
-      })
-
-      peer.send(JSON.stringify({
-        msg: 'sendProfilesKey',
-        challenge: challenge,
-        key: this.dbs.profiles.key.toString('hex')
-      }))
-    })
+  async updateDevice (device) {
+    this._updateResource('devices', device)
   }
 
   createApp (channel, challenge, appName, profileId) {
     return new Promise(async (resolve, reject) => {
       const dbName = profileId + '-' + appName
-      const apps = await this.getApps(profileId)
+      const apps = await this.getApps()
       if (apps.find(app => app.name === app)) {
         return resolve()
       }
@@ -206,7 +169,7 @@ class Masq {
         peer.on('data', async (data) => {
           const json = JSON.parse(data)
           if (json.msg === 'appInfo') {
-            await this.addApp(profileId, {
+            await this.addApp({
               name: json.name,
               description: json.description,
               image: json.image
@@ -225,7 +188,7 @@ class Masq {
         })
 
         db = openOrCreateDB(dbName)
-        this.dbs[dbName] = db
+        this.appsDBs[dbName] = db
 
         db.on('ready', () => {
           peer.send(JSON.stringify({
@@ -242,10 +205,9 @@ class Masq {
    * Private methods
    */
 
-  async _createResource (profileId, name, res) {
-    if (!profileId) throw Error('missing profileId')
-
-    const node = await this.dbs[profileId].getAsync(`/${name}`)
+  async _createResource (name, res) {
+    this._checkProfile()
+    const node = await this.profileDB.getAsync(`/${name}`)
     const ids = node ? node.value : []
     const id = uuidv4()
     res['id'] = id
@@ -260,31 +222,72 @@ class Masq {
       value: res
     }]
 
-    await this.dbs[profileId].batchAsync(batch)
+    await this.profileDB.batchAsync(batch)
   }
 
-  async _getResources (profileId, name) {
-    if (!profileId) throw Error('missing profileId')
-
-    const node = await this.dbs[profileId].getAsync(`/${name}`)
+  async _getResources (name) {
+    const node = await this.profileDB.getAsync(`/${name}`)
     if (!node) return []
 
     const ids = node.value
     const resourcePromises = ids.map(
-      id => this.dbs[profileId].getAsync(`/${name}/${id}`)
+      id => this.profileDB.getAsync(`/${name}/${id}`)
     )
     const resourceNodes = await Promise.all(resourcePromises)
     const resources = resourceNodes.map(n => n.value)
     return resources
   }
 
-  async _updateResource (profileId, name, res) {
-    if (!profileId) throw Error('missing profileId')
-
+  async _updateResource (name, res) {
     const id = res.id
     if (!id) throw Error('Missing id')
+    return this.profileDB.putAsync(`/${name}/${id}`, res)
+  }
 
-    return this.dbs[profileId].putAsync(`/${name}/${id}`, res)
+  _setProfileToLocalStorage (profile) {
+    const id = profile.id
+    if (!id) throw Error('missing id')
+
+    window.localStorage.setItem(id, JSON.stringify({
+      id: id,
+      username: profile.username,
+      image: profile.image
+    }))
+  }
+
+  _getProfilesFromLocalStorage () {
+    const ids = Object.keys(window.localStorage)
+    if (!ids) return []
+
+    const profiles = ids.map(id =>
+      JSON.parse(window.localStorage.getItem(id))
+    )
+
+    return profiles
+  }
+
+  /**
+   * Replicate a database in a swarm using
+   * db.discoveryKey as channel name
+   */
+  _startReplicate (db) {
+    const discoveryKey = db.discoveryKey.toString('hex')
+    this.hubs[discoveryKey] = signalhub(discoveryKey, HUB_URLS)
+    this.swarms[discoveryKey] = swarm(this.hubs[discoveryKey])
+    this.swarms[discoveryKey].on('peer', peer => {
+      const stream = db.replicate({ live: true })
+      pump(peer, stream, peer)
+    })
+  }
+
+  _stopAllReplicates () {
+    Object.values(this.swarms).forEach(sw => sw.close())
+    this.swarms = {}
+    this.hubs = {}
+  }
+
+  _checkProfile () {
+    if (!this.profileDB) throw Error('Open a profile first')
   }
 }
 
