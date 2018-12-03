@@ -109,7 +109,7 @@ const mapStateToProps = state => ({
 })
 
 const mapDispatchToProps = dispatch => ({
-  addDevice: (profileId, device) => dispatch(addDevice(profileId, device)),
+  addDevice: (device) => dispatch(addDevice(device)),
   createApp: (channel, challenge, app, profileId) => dispatch(createApp(channel, challenge, app, profileId))
 })
 
