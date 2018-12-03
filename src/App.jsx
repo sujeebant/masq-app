@@ -4,7 +4,6 @@ import { connect } from 'react-redux'
 import { HashRouter as Router, Route } from 'react-router-dom'
 
 import { Login, Apps, Devices, Settings, Sidebar } from './containers'
-// import { AuthApp } from './modals'
 import { addDevice, createApp, setCurrentAppRequest } from './actions'
 import { AuthApp } from './modals'
 
