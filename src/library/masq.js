@@ -61,6 +61,7 @@ class Masq {
   async closeProfile () {
     this._stopAllReplicates()
     this.profileDB = null
+    this.profileId = null
     this.dbs = {}
   }
 
