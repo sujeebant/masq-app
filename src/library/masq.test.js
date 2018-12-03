@@ -122,9 +122,7 @@ test('update a device', async () => {
 
 test('should throw if there is no id in device', async () => {
   expect.assertions(1)
-  const profiles = await masq.getProfiles()
-  const profileId = profiles[0].id
-  const devices = await masq.getDevices(profileId)
+  const devices = await masq.getDevices()
   const device = { ...devices[0] }
   delete device.id
 
