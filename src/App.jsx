@@ -43,8 +43,6 @@ class App extends Component {
   }
 
   async componentDidMount () {
-    this.props.setCurrentAppRequest({ name: 'Test app' })
-
     if (!this.props.devices.length) {
       const { name, os } = require('detect-browser').detect()
       this.props.addDevice({
@@ -54,14 +52,15 @@ class App extends Component {
       })
     }
 
-    const url = new URL(window.location.href)
-    const channel = url.searchParams.get('channel')
-    const challenge = url.searchParams.get('challenge')
-    const app = url.searchParams.get('appName')
-    const profileId = url.searchParams.get('profileID')
+    const hash = window.location.hash.substr(2) // ignore #/ characters
+    if (!hash.length) return
 
-    if (channel && challenge && app && profileId) {
-      this.props.createApp(channel, challenge, app, profileId)
+    const decoded = Buffer.from(hash, 'base64')
+    try {
+      const [ appId ] = JSON.parse(decoded) // + msg, channel, key
+      this.props.setCurrentAppRequest({ name: appId })
+    } catch (e) {
+      // Incorrect urls parameters
     }
   }
 
@@ -84,7 +83,7 @@ class App extends Component {
               app={currentAppRequest}
             />
           }
-          <Route exact path='/' component={Login} />
+          <Route path='/' component={Login} />
 
           {/* <Route path='/registerapp/:channel/:challenge/:app' component={AuthApp} /> */}
 
@@ -129,8 +128,8 @@ App.propTypes = {
   currentAppRequest: PropTypes.object,
   setCurrentAppRequest: PropTypes.func,
   addDevice: PropTypes.func,
-  devices: PropTypes.arrayOf(PropTypes.object),
-  createApp: PropTypes.func
+  devices: PropTypes.arrayOf(PropTypes.object)
+  // createApp: PropTypes.func
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(App)
