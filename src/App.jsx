@@ -4,7 +4,7 @@ import { connect } from 'react-redux'
 import { HashRouter as Router, Route } from 'react-router-dom'
 
 import { Login, Apps, Devices, Settings, Sidebar } from './containers'
-import { addDevice, createApp, setCurrentAppRequest } from './actions'
+import { addDevice, setCurrentAppRequest } from './actions'
 import { AuthApp } from './modals'
 
 const authenticatedRoutes = [
@@ -57,8 +57,8 @@ class App extends Component {
 
     const decoded = Buffer.from(hash, 'base64')
     try {
-      const [ appId ] = JSON.parse(decoded) // + msg, channel, key
-      this.props.setCurrentAppRequest({ name: appId })
+      const [ appId, msg, channel, key ] = JSON.parse(decoded) // eslint-disable-line
+      this.props.setCurrentAppRequest({ appId, channel, key })
     } catch (e) {
       // Incorrect urls parameters
     }
@@ -80,7 +80,7 @@ class App extends Component {
           {currentUser && currentAppRequest &&
             <AuthApp
               onClose={() => this.props.setCurrentAppRequest(null)}
-              app={currentAppRequest}
+              appRequest={currentAppRequest}
             />
           }
           <Route path='/' component={Login} />
@@ -118,9 +118,8 @@ const mapStateToProps = state => ({
 })
 
 const mapDispatchToProps = dispatch => ({
-  addDevice: (device) => dispatch(addDevice(device)),
-  setCurrentAppRequest: (app) => dispatch(setCurrentAppRequest(app)),
-  createApp: (channel, challenge, app, profileId) => dispatch(createApp(channel, challenge, app, profileId))
+  addDevice: device => dispatch(addDevice(device)),
+  setCurrentAppRequest: app => dispatch(setCurrentAppRequest(app))
 })
 
 App.propTypes = {
@@ -129,7 +128,6 @@ App.propTypes = {
   setCurrentAppRequest: PropTypes.func,
   addDevice: PropTypes.func,
   devices: PropTypes.arrayOf(PropTypes.object)
-  // createApp: PropTypes.func
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(App)
