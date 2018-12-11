@@ -204,11 +204,12 @@ class Masq {
 
         peer.once('data', async (data) => {
           const json = await decryptMessage(this.key, data)
-          const { msg, name, description, imageURL } = json
-          this.app = { name, description, imageURL }
-
-          if (msg === 'registerUserApp') {
+          if (json.msg === 'registerUserApp') {
+            const { name, description, imageURL } = json
+            this.app = { name, description, imageURL }
             resolve(false)
+          } else {
+            reject(new Error('Invalid data'))
           }
         })
       })
