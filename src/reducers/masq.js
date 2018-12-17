@@ -1,4 +1,5 @@
 const masq = (state = {
+  syncStep: 0,
   users: [],
   apps: [],
   devices: [],
@@ -25,7 +26,7 @@ const masq = (state = {
     case 'ADD_DEVICE':
       return { ...state, devices: [...state.devices, action.device] }
     case 'SET_SYNC_STEP':
-      return { ...state, syncStep: state.syncStep }
+      return { ...state, syncStep: action.syncStep }
     default:
       return state
   }
