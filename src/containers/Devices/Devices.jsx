@@ -4,27 +4,54 @@ import { connect } from 'react-redux'
 import { Redirect } from 'react-router-dom'
 import { Card, Button } from 'qwant-research-components'
 
+import { SyncDevice } from '../../modals'
+
 import styles from './Devices.module.scss'
 
-const Devices = ({ user, devices }) => {
-  if (!user) return <Redirect to='/' />
+class Devices extends React.Component {
+  constructor (props) {
+    super(props)
+    this.state = { addDevice: false }
+    this.handleAddDeviceClick = this.handleAddDeviceClick.bind(this)
+    this.renderSyncModal = this.renderSyncModal.bind(this)
+    this.handleSyncModalClosed = this.handleSyncModalClosed.bind(this)
+  }
 
-  return (
-    <div className={styles.Devices}>
-      <div className={styles.main}>
-        <p className='title'>Mes Appareils</p>
-        <p className='subtitle'>Retrouvez la liste de vos appareils connectés à Masq</p>
-        {devices.map((device, index) => (
-          <div key={index} className={styles.Card}>
-            <Card minHeight={64} title={device.name} color={device.color} description={device.description} />
-          </div>
-        ))}
+  handleAddDeviceClick () {
+    this.setState({ addDevice: true })
+  }
+
+  handleSyncModalClosed () {
+    this.setState({ addDevice: false })
+  }
+
+  renderSyncModal () {
+    return this.state.addDevice ? <SyncDevice onClose={this.handleSyncModalClosed} /> : false
+  }
+
+  render () {
+    const { user, devices } = this.props
+
+    if (!user) return <Redirect to='/' />
+
+    return (
+      <div className={styles.Devices}>
+        <div className={styles.main}>
+          {this.renderSyncModal()}
+          <p className='title'>Mes Appareils</p>
+          <p className='subtitle'>Retrouvez la liste de vos appareils connectés à Masq</p>
+          {devices.map((device, index) => (
+            <div key={index} className={styles.Card}>
+              <Card minHeight={64} title={device.name} color={device.color} description={device.description} />
+            </div>
+          ))}
+        </div>
+        <div className={styles.right}>
+          <Button secondary label='Ajouter un appareil' onClick={this.handleAddDeviceClick} />
+        </div>
       </div>
-      <div className={styles.right}>
-        <Button secondary label='Ajouter un appareil' onClick={() => console.log('button')} />
-      </div>
-    </div>
-  )
+    )
+  }
 }
 
 const mapStateToProps = (state) => ({

@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Button, Loader } from 'qwant-research-components'
 
 import { Modal } from '../../components'
@@ -15,7 +16,7 @@ class SyncDevice extends React.Component {
 
   renderSyncLink () {
     return (
-      <Modal height={370} width={511}>
+      <Modal height={370} width={511} onClose={this.props.onClose}>
         <div className={styles.SyncDevice}>
           <p className={styles.title}>Ajouter un appareil</p>
           <p className={styles.description}>
@@ -29,7 +30,6 @@ class SyncDevice extends React.Component {
   }
 
   renderSyncLoading () {
-    console.log('styles.loader',)
     return (
       <Modal height={370} width={511}>
         <div className={styles.SyncDevice}>
@@ -58,12 +58,16 @@ class SyncDevice extends React.Component {
     return (
       <div>
         {/* <Notification style={{ position: 'relative' }} title='Lien copié dans le presse-papier' /> */}
-        {/* {this.renderSyncLink()} */}
+        {this.renderSyncLink()}
         {/* {this.renderSyncLoading()} */}
-        {this.renderSyncComplete()}
+        {/* {this.renderSyncComplete()} */}
       </div>
     )
   }
+}
+
+SyncDevice.propTypes = {
+  onClose: PropTypes.func.isRequired
 }
 
 export default SyncDevice
