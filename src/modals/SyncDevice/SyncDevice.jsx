@@ -68,7 +68,7 @@ class SyncDevice extends React.Component {
         <div className={styles.SyncDevice}>
           <CheckCircle width={160} height={160} color='#40ae6c' />
           <p className={styles.description}>Synchronisation terminée. Vous pouvez maintenant vous connecter</p>
-          <Button label='OK' />
+          <Button label='OK' onClick={this.handleOnClose} />
         </div>
       </Modal>
     )
