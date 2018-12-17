@@ -8,7 +8,7 @@ window.crypto = require('@trust/webcrypto')
 
 const common = require('../../node_modules/masq-common/dist/index')
 
-const { encrypt, decrypt } = common.crypto
+const { encrypt, decrypt, exportKey, genAESKey } = common.crypto
 
 // use an in memory random-access-storage instead
 jest.mock('random-access-idb', () =>
@@ -162,16 +162,9 @@ describe('masq protocol', async () => {
   let keyBase64
 
   beforeAll(async () => {
-    cryptoKey = await window.crypto.subtle.generateKey(
-      {
-        name: 'AES-GCM',
-        length: 128
-      },
-      true,
-      ['encrypt', 'decrypt']
-    )
-    key = await window.crypto.subtle.exportKey('raw', cryptoKey)
-    keyBase64 = key.toString('base64')
+    cryptoKey = await genAESKey(true, 'AES-GCM', 128)
+    key = await exportKey(cryptoKey)
+    keyBase64 = Buffer.from(key).toString('base64')
   })
 
   test('handleUserAppLogin should connect to the swarm', done => {
