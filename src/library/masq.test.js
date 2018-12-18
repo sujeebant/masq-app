@@ -6,7 +6,7 @@ const swarm = require('webrtc-swarm')
 const wrtc = require('wrtc')
 window.crypto = require('@trust/webcrypto')
 
-const common = require('masq-common/dist')
+const common = require('masq-common')
 
 const { encrypt, decrypt, exportKey, genAESKey } = common.crypto
 

@@ -5,7 +5,7 @@ import swarm from 'webrtc-swarm'
 import pump from 'pump'
 import uuidv4 from 'uuid/v4'
 import { promisifyAll } from 'bluebird'
-import common from 'masq-common/dist'
+import common from 'masq-common'
 
 const { encrypt, decrypt, importKey } = common.crypto
 const { dbReady } = common.utils

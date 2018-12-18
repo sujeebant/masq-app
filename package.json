@@ -39,7 +39,7 @@
     "typeface-asap": "0.0.54",
     "uuid": "^3.3.2",
     "webrtc-swarm": "^2.9.0",
-    "masq-common": "git+https://github.com/QwantResearch/masq-common#utils"
+    "masq-common": "git+https://github.com/QwantResearch/masq-common"
   },
   "devDependencies": {
     "@trust/webcrypto": "^0.9.2",
