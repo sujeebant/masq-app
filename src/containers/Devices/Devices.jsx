@@ -46,7 +46,8 @@ class Devices extends React.Component {
             </div>
           ))}
         </div>
-        <div className={styles.right}>
+
+        <div className={styles.sidebar}>
           <Button secondary label='Ajouter un appareil' onClick={this.handleAddDeviceClick} />
         </div>
       </div>
