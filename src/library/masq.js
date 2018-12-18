@@ -176,13 +176,13 @@ class Masq {
 
       const sendAuthorized = async (peer, userAppDbId) => {
         const data = { msg: 'authorized', userAppDbId }
-        let encryptedMsg = await encrypt(this.key, data, 'base64')
+        const encryptedMsg = await encrypt(this.key, data, 'base64')
         peer.send(JSON.stringify(encryptedMsg))
       }
 
       const sendNotAuthorized = async (peer) => {
         const data = { msg: 'notAuthorized' }
-        let encryptedMsg = await encrypt(this.key, data, 'base64')
+        const encryptedMsg = await encrypt(this.key, data, 'base64')
         peer.send(JSON.stringify(encryptedMsg))
       }
 
@@ -240,19 +240,19 @@ class Masq {
 
       const sendAccessRefused = async (peer) => {
         const data = { msg: 'masqAccessRefused' }
-        let encryptedMsg = await encrypt(this.key, data, 'base64')
+        const encryptedMsg = await encrypt(this.key, data, 'base64')
         peer.send(JSON.stringify(encryptedMsg))
       }
 
       const sendAccessGranted = async (peer, dbKey, userAppDbId) => {
         const data = { msg: 'masqAccessGranted', key: dbKey, userAppDbId }
-        let encryptedMsg = await encrypt(this.key, data, 'base64')
+        const encryptedMsg = await encrypt(this.key, data, 'base64')
         peer.send(JSON.stringify(encryptedMsg))
       }
 
       const sendWriteAccessGranted = async (peer) => {
         const data = { msg: 'writeAccessGranted' }
-        let encryptedMsg = await encrypt(this.key, data, 'base64')
+        const encryptedMsg = await encrypt(this.key, data, 'base64')
         peer.send(JSON.stringify(encryptedMsg))
       }
 

@@ -197,13 +197,13 @@ describe('masq protocol', async () => {
           sw.close()
         })
 
-        let message = {
+        const message = {
           msg: 'registerUserApp',
           name: 'test app',
           description: 'description goes here',
           imageUrl: ''
         }
-        let encryptedMsg = await encrypt(cryptoKey, message, 'base64')
+        const encryptedMsg = await encrypt(cryptoKey, message, 'base64')
         peer.send(JSON.stringify(encryptedMsg))
       })
     })
@@ -231,11 +231,11 @@ describe('masq protocol', async () => {
           expect(key).toBeDefined()
           expect(userAppDbId).toBeDefined()
 
-          let message = {
+          const message = {
             msg: 'requestWriteAccess',
             key: '1982524189cae29354879cfe2d219628a8a057f2569a0f2ccf11253cf2b55f3b'
           }
-          let encryptedMsg = await encrypt(cryptoKey, message, 'base64')
+          const encryptedMsg = await encrypt(cryptoKey, message, 'base64')
           peer.send(JSON.stringify(encryptedMsg))
 
           peer.once('data', async (data) => {
@@ -245,13 +245,13 @@ describe('masq protocol', async () => {
           })
         })
 
-        let message = {
+        const message = {
           msg: 'registerUserApp',
           name: 'test app',
           description: 'description goes here',
           imageUrl: ''
         }
-        let encryptedMsg = await encrypt(cryptoKey, message, 'base64')
+        const encryptedMsg = await encrypt(cryptoKey, message, 'base64')
         peer.send(JSON.stringify(encryptedMsg))
       })
     })
@@ -276,10 +276,10 @@ describe('masq protocol', async () => {
         expect(userAppDbId).toBeDefined()
 
         // sw.close()
-        let message = {
+        const message = {
           msg: 'connectionEstablished'
         }
-        let encryptedMsg = await encrypt(cryptoKey, message, 'base64')
+        const encryptedMsg = await encrypt(cryptoKey, message, 'base64')
         peer.send(JSON.stringify(encryptedMsg))
         sw.close()
       })
