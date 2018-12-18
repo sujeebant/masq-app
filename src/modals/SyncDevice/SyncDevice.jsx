@@ -40,7 +40,7 @@ class SyncDevice extends React.Component {
         <div className={styles.SyncDevice}>
           <p className={styles.title}>Ajouter un appareil</p>
           <p className={styles.description}>
-            Copiez-collez le lien suivant pour synchroniser votre profile et vos applications avec un autre appareil.
+            Copiez-collez le lien suivant pour synchroniser votre profil et vos applications avec un autre appareil.
           </p>
           <input id='link' readOnly defaultValue='qwa.nt/0BJ8ZX' />
           <Button label='Copier' onClick={this.copyLink} />
