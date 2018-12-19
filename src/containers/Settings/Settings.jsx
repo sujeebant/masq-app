@@ -42,9 +42,11 @@ class Settings extends React.Component {
   isValid (fieldName) {
     const field = this.state[fieldName]
     switch (fieldName) {
+      case 'lastname': return isName(field)
+      case 'firstname': return isName(field)
       case 'image': return true
       case 'username': return isUsername(field)
-      default: return isName(field)
+      default: return false
     }
   }
 

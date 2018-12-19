@@ -42,10 +42,12 @@ class Signup extends React.Component {
 
     switch (fieldName) {
       case 'image': return true
+      case 'firstname': return isName(field)
+      case 'lastname': return isName(field)
       case 'username': return isUsername(field)
       case 'password': return isPassword(field)
       case 'passwordConfirmation': return field === this.state.password
-      default: return isName(field)
+      default: return false
     }
   }
 
