@@ -19,7 +19,7 @@ describe('name validator', () => {
     expect(isName(str)).toBe(true)
   })
 
-  test('accent are allowed', () => {
+  test('accents are allowed', () => {
     const str = 'some name é'
     expect(isName(str)).toBe(true)
   })
@@ -43,6 +43,10 @@ describe('username validator', () => {
 
   test('empty is forbidden', () => {
     expect(isUsername('')).toBe(false)
+  })
+
+  test('accents are forbidden', () => {
+    expect(isUsername('é')).toBe(false)
   })
 
   test('spaces are not allowed', () => {
