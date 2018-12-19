@@ -19,6 +19,11 @@ describe('name validator', () => {
     expect(isName(str)).toBe(true)
   })
 
+  test('accent are allowed', () => {
+    const str = 'some name é'
+    expect(isName(str)).toBe(true)
+  })
+
   test('numbers are forbidden', () => {
     const str = 'some name 2'
     expect(isName(str)).toBe(false)
@@ -36,7 +41,7 @@ describe('username validator', () => {
     expect(isUsername(str)).toBe(true)
   })
 
-  test('empty is not allowed', () => {
+  test('empty is forbidden', () => {
     expect(isUsername('')).toBe(false)
   })
 
