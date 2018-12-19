@@ -104,7 +104,6 @@ class Signup extends React.Component {
       return this.forceUpdate()
     }
 
-    console.log('finish() onSignup')
     onSignup(this.state)
   }
 
