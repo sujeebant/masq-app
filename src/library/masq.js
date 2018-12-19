@@ -76,7 +76,7 @@ class Masq {
   async addProfile (profile) {
     // TODO: Check profile properties
     const id = uuidv4()
-    const hashedPassphrase = await derivePassphrase(profile.passphrase)
+    const hashedPassphrase = await derivePassphrase(profile.password)
     const publicProfile = {
       username: profile.username,
       image: profile.image,

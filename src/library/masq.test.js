@@ -68,7 +68,7 @@ describe('masq internal operations', () => {
       username: 'JDoe',
       firstname: 'John',
       lastname: 'Doe',
-      passphrase: 'secret',
+      password: 'secret',
       image: ''
     }
 
