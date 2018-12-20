@@ -227,7 +227,8 @@ describe('masq protocol', async () => {
   test('handleUserAppLogin should connect to the swarm', done => {
     const hub = signalhub('channel', 'localhost:8080')
     const sw = swarm(hub, { wrtc })
-    sw.on('close', done)
+
+    sw.on('close', () => setTimeout(done, 3000))
 
     sw.on('peer', () => sw.close())
     masq.handleUserAppLogin('channel', keyBase64, 'someAppId')
@@ -238,7 +239,7 @@ describe('masq protocol', async () => {
     const hub = signalhub('channel', 'localhost:8080')
     const sw = swarm(hub, { wrtc })
 
-    sw.on('close', done)
+    sw.on('close', () => setTimeout(done, 3000))
 
     sw.on('peer', peer => {
       peer.once('data', async (data) => {
@@ -273,7 +274,7 @@ describe('masq protocol', async () => {
     const hub = signalhub('channel', 'localhost:8080')
     const sw = swarm(hub, { wrtc })
 
-    sw.on('close', done)
+    sw.on('close', () => setTimeout(done, 3000))
 
     sw.on('peer', peer => {
       peer.once('data', async (data) => {
@@ -321,7 +322,8 @@ describe('masq protocol', async () => {
     const hub = signalhub('channel', 'localhost:8080')
     const sw = swarm(hub, { wrtc })
 
-    sw.on('close', done)
+    sw.on('close', () => setTimeout(done, 3000))
+
     sw.on('disconnect', () => {
       sw.close()
     })
