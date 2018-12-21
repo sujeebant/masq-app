@@ -322,6 +322,91 @@ class Masq {
   }
 
   /**
+   * Exchange messages with a Masq-app instance and sync Masq-profile.
+   * It will create a new Masq-profile hyperdb.
+   * Then, the local key is sent to obtain write permission
+   * The initiator boolean indicates if the initiator is the Masq-app
+   * instance which ask to pull the profile (true) or the Masq-app instance
+   * which has already the profile (push)
+   * @param {string} channel The channel to connect
+   * @param {string} rawKey The encryption key, base64 encoded
+   * @param {boolean} initiator Indicate if first message must be sent 'masqAppSyncProfile'
+   */
+  async handleSyncProfile (channel, rawKey, initiator) {
+    console.log('initiator', initiator)
+
+    return new Promise(async (resolve, reject) => {
+      this.key = await importKey(Buffer.from(rawKey, 'base64'))
+      this.hub = signalhub(channel, HUB_URLS)
+      this.sw = swarm(this.hub, swarmOpts)
+
+      this.sw.on('disconnect', () => {
+        this._closeUserAppConnection()
+        return resolve(true)
+      })
+
+      // const sendInitialMessage = async (peer) => {
+      //   const data = { msg: 'masqAppSyncProfile' }
+      //   const encryptedMsg = await encrypt(this.key, data, 'base64')
+      //   peer.send(JSON.stringify(encryptedMsg))
+      // }
+
+      const sendMasqAppAccessGranted = async (peer) => {
+        const data = { msg: 'masqAppAccessGranted', key: '0x123' }
+        const encryptedMsg = await encrypt(this.key, data, 'base64')
+        peer.send(JSON.stringify(encryptedMsg))
+      }
+
+      const sendWriteMasqAppAccessGranted = async (peer) => {
+        const data = { msg: 'masqAppWriteAccessGranted' }
+        const encryptedMsg = await encrypt(this.key, data, 'base64')
+        peer.send(JSON.stringify(encryptedMsg))
+      }
+      console.log('2.0', channel)
+
+      this.sw.on('peer', async (peer) => {
+        this.peer = peer
+        console.log('3.0', initiator)
+
+        if (initiator) {
+          console.log('initiator true')
+
+          sendMasqAppAccessGranted(this.peer)
+        }
+
+        this.peer.on('data', (data) => handleData(this.peer, data))
+      })
+
+      const handleData = async (peer, data) => {
+        const json = await decrypt(this.key, JSON.parse(data), 'base64')
+        const { msg } = json
+        // TODO: Error if  missing params
+        if (msg === 'masqAppSyncProfile') {
+          console.log('1.0')
+          sendMasqAppAccessGranted(peer)
+        }
+        if (msg === 'masqAppRequestWriteAccess') {
+          // const userAppKey = Buffer.from(json.key, 'hex')
+          // this.appsDBs[dbName].authorize(userAppKey, (err) => {
+          //   if (err) throw err
+          sendWriteMasqAppAccessGranted(peer)
+          this.sw.close()
+          return resolve()
+          // })
+        }
+      }
+
+      // dbName = this.profileId + '-' + id
+      // const db = openOrCreateDB(dbName)
+      // this.appsDBs[dbName] = db
+      // db.on('ready', () => {
+      //   this._startReplicate(db)
+      //   sendAccessGranted(this.peer, db.key.toString('hex'), id)
+      // })
+    })
+  }
+
+  /**
    * Private methods
    */
 
