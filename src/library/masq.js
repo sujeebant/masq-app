@@ -15,6 +15,18 @@ const createSwarm = (hub) => {
     swOpts.wrtc = require('wrtc')
   }
 
+  swOpts.config = {
+    'iceServers': [
+      { 'urls': 'stun:stun.l.google.com:19302' },
+      { 'urls': 'stun:global.stun.twilio.com:3478?transport=udp' },
+      {
+        'url': 'turn:numb.viagenie.ca',
+        'credential': 'muazkh',
+        'username': 'webrtc@live.com'
+      }
+    ]
+  }
+
   return swarm(hub, swOpts)
 }
 
