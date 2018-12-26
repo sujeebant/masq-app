@@ -9,9 +9,14 @@ const { dbReady, createPromisifiedHyperDB } = common.utils
 
 const HUB_URLS = process.env.REACT_APP_SIGNALHUB_URLS.split(',')
 
-const swarmOpts = process.env.NODE_ENV === 'test'
-  ? { wrtc: require('wrtc') }
-  : {}
+const createSwarm = (hub) => {
+  const swOpts = {}
+  if (process.env.NODE_ENV === 'test') {
+    swOpts.wrtc = require('wrtc')
+  }
+
+  return swarm(hub, swOpts)
+}
 
 /**
  * Open or create a hyperdb instance
@@ -214,7 +219,7 @@ class Masq {
       }
 
       this.hub = signalhub(channel, HUB_URLS)
-      this.sw = swarm(this.hub, swarmOpts)
+      this.sw = createSwarm(this.hub)
       console.log('app: login: create swarm, channel : ' + channel)
 
       this.sw.on('disconnect', () => {
@@ -401,7 +406,7 @@ class Masq {
     const discoveryKey = db.discoveryKey.toString('hex')
     console.log('App : channel : ' + discoveryKey)
     this.hubs[discoveryKey] = signalhub(discoveryKey, HUB_URLS)
-    this.swarms[discoveryKey] = swarm(this.hubs[discoveryKey], swarmOpts)
+    this.swarms[discoveryKey] = createSwarm(this.hubs[discoveryKey])
     this.swarms[discoveryKey].on('peer', peer => {
       const stream = db.replicate({ live: true })
       pump(peer, stream, peer)
