@@ -194,10 +194,12 @@ class Masq {
    * @param {string} appId The app id (url for instance)
    */
   async handleUserAppLogin (channel, rawKey, appId) {
+    console.log('login : ' + channel + ' ; key : ' + rawKey)
     return new Promise(async (resolve, reject) => {
       this.appId = appId
       this._checkProfile()
       this.key = await importKey(Buffer.from(rawKey, 'base64'))
+      console.log('app: login: imported key')
 
       const sendAuthorized = async (peer, userAppDbId) => {
         const data = { msg: 'authorized', userAppDbId }
@@ -213,6 +215,7 @@ class Masq {
 
       this.hub = signalhub(channel, HUB_URLS)
       this.sw = swarm(this.hub, swarmOpts)
+      console.log('app: login: create swarm, channel : ' + channel)
 
       this.sw.on('disconnect', () => {
         this._closeUserAppConnection()
@@ -220,6 +223,7 @@ class Masq {
       })
 
       this.sw.on('peer', async (peer) => {
+        console.log('app: login: peer connected')
         this.peer = peer
         const apps = await this.getApps()
         const app = apps.find(app => app.appId === appId)
@@ -232,6 +236,7 @@ class Masq {
 
         peer.once('data', async (data) => {
           const json = await decrypt(this.key, JSON.parse(data), 'base64')
+          console.log('app: login: ' + json)
 
           if (json.msg === 'connectionEstablished') {
             this._closeUserAppConnection()
@@ -283,6 +288,7 @@ class Masq {
 
       const handleData = async (peer, data) => {
         const json = await decrypt(this.key, JSON.parse(data), 'base64')
+        console.log('app: register: ' + json)
         const { msg } = json
         // TODO: Error if  missing params
 
@@ -393,6 +399,7 @@ class Masq {
    */
   _startReplicate (db) {
     const discoveryKey = db.discoveryKey.toString('hex')
+    console.log('App : channel : ' + discoveryKey)
     this.hubs[discoveryKey] = signalhub(discoveryKey, HUB_URLS)
     this.swarms[discoveryKey] = swarm(this.hubs[discoveryKey], swarmOpts)
     this.swarms[discoveryKey].on('peer', peer => {
