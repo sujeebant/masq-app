@@ -345,6 +345,10 @@ class Masq {
         return resolve(true)
       })
 
+      this.sw.on('close', () => {
+        console.log('CLOSE handleSyncProfile', channel)
+      })
+
       // const sendInitialMessage = async (peer) => {
       //   const data = { msg: 'masqAppSyncProfile' }
       //   const encryptedMsg = await encrypt(this.key, data, 'base64')
@@ -365,9 +369,8 @@ class Masq {
       console.log('2.0', channel)
 
       this.sw.on('peer', async (peer) => {
-        this.peer = peer
         console.log('3.0', initiator)
-
+        this.peer = peer
         if (initiator) {
           console.log('initiator true')
 
