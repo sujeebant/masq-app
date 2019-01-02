@@ -9,9 +9,26 @@ const { dbReady, createPromisifiedHyperDB } = common.utils
 
 const HUB_URLS = process.env.REACT_APP_SIGNALHUB_URLS.split(',')
 
-const swarmOpts = process.env.NODE_ENV === 'test'
-  ? { wrtc: require('wrtc') }
-  : {}
+const createSwarm = (hub) => {
+  const swOpts = {}
+  if (process.env.NODE_ENV === 'test') {
+    swOpts.wrtc = require('wrtc')
+  }
+
+  swOpts.config = {
+    'iceServers': [
+      { 'urls': 'stun:stun.l.google.com:19302' },
+      { 'urls': 'stun:global.stun.twilio.com:3478?transport=udp' },
+      {
+        'urls': 'turn:numb.viagenie.ca',
+        'credential': 'muazkh',
+        'username': 'webrtc@live.com'
+      }
+    ]
+  }
+
+  return swarm(hub, swOpts)
+}
 
 /**
  * Open or create a hyperdb instance
@@ -194,10 +211,12 @@ class Masq {
    * @param {string} appId The app id (url for instance)
    */
   async handleUserAppLogin (channel, rawKey, appId) {
+    console.log('login : ' + channel + ' ; key : ' + rawKey)
     return new Promise(async (resolve, reject) => {
       this.appId = appId
       this._checkProfile()
       this.key = await importKey(Buffer.from(rawKey, 'base64'))
+      console.log('app: login: imported key')
 
       const sendAuthorized = async (peer, userAppDbId) => {
         const data = { msg: 'authorized', userAppDbId }
@@ -212,7 +231,8 @@ class Masq {
       }
 
       this.hub = signalhub(channel, HUB_URLS)
-      this.sw = swarm(this.hub, swarmOpts)
+      this.sw = createSwarm(this.hub)
+      console.log('app: login: create swarm, channel : ' + channel)
 
       this.sw.on('disconnect', () => {
         this._closeUserAppConnection()
@@ -220,6 +240,7 @@ class Masq {
       })
 
       this.sw.on('peer', async (peer) => {
+        console.log('app: login: peer connected')
         this.peer = peer
         const apps = await this.getApps()
         const app = apps.find(app => app.appId === appId)
@@ -232,6 +253,7 @@ class Masq {
 
         peer.once('data', async (data) => {
           const json = await decrypt(this.key, JSON.parse(data), 'base64')
+          console.log('app: login: ' + json)
 
           if (json.msg === 'connectionEstablished') {
             this._closeUserAppConnection()
@@ -283,6 +305,7 @@ class Masq {
 
       const handleData = async (peer, data) => {
         const json = await decrypt(this.key, JSON.parse(data), 'base64')
+        console.log('app: register: ' + json)
         const { msg } = json
         // TODO: Error if  missing params
 
@@ -393,8 +416,9 @@ class Masq {
    */
   _startReplicate (db) {
     const discoveryKey = db.discoveryKey.toString('hex')
+    console.log('App : channel : ' + discoveryKey)
     this.hubs[discoveryKey] = signalhub(discoveryKey, HUB_URLS)
-    this.swarms[discoveryKey] = swarm(this.hubs[discoveryKey], swarmOpts)
+    this.swarms[discoveryKey] = createSwarm(this.hubs[discoveryKey])
     this.swarms[discoveryKey].on('peer', peer => {
       const stream = db.replicate({ live: true })
       pump(peer, stream, peer)
