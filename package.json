@@ -2,7 +2,7 @@
   "name": "masq-app",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://qwantresearch.github.io/masq-app",
+  "homepage": "https://qwantresearch.github.io/build",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
